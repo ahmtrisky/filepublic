@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BerbagiFile – Upload & Bagikan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: #2a2a2a;
+    --accent: #f0e040;
+    --accent2: #e05a20;
+    --text: #f0ede8;
+    --muted: #888;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Background grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 28px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 16px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Upload zone */
+  .upload-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px;
+    margin-bottom: 24px;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    margin-bottom: 24px;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(240, 224, 64, 0.04);
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-icon {
+    width: 52px;
+    height: 52px;
+    background: var(--surface2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 1.4rem;
+  }
+
+  .drop-zone h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .drop-zone p {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .file-preview {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 24px;
+  }
+
+  .file-preview.visible { display: flex; }
+
+  .file-icon-big {
+    width: 40px;
+    height: 40px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    color: #000;
+  }
+
+  .file-info { flex: 1; min-width: 0; }
+  .file-info .fname {
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-info .fsize { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .remove-btn:hover { color: #e05a20; }
+
+  label.field-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  input[type="text"], textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+  }
+
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { min-height: 90px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  @media(max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+  .field { margin-bottom: 16px; }
+
+  .submit-btn {
+    width: 100%;
+    margin-top: 24px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 15px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+
+  .submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* File list */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .count-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    padding: 2px 10px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+  }
+
+  .file-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .file-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: border-color 0.2s;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .file-card:hover { border-color: #3a3a3a; }
+
+  .fc-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+
+  .fc-body { flex: 1; min-width: 0; }
+
+  .fc-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .fc-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .fc-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.75rem;
+    color: #555;
+  }
+
+  .fc-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+
+  .dl-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: opacity 0.2s;
+  }
+  .dl-btn:hover { opacity: 0.8; }
+
+  .share-btn {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.78rem;
+    padding: 7px 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: border-color 0.2s;
+  }
+  .share-btn:hover { border-color: var(--accent); }
+
+  .del-btn {
+    background: none;
+    border: none;
+    color: #444;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .del-btn:hover { color: var(--accent2); }
+
+  /* Share modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    max-width: 440px;
+    width: 100%;
+    animation: popIn 0.2s ease;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+
+  .modal p { color: var(--muted); font-size: 0.875rem; margin-bottom: 20px; }
+
+  .link-box {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+  }
+
+  .link-box span {
+    flex: 1;
+    font-size: 0.82rem;
+    color: var(--accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: monospace;
+  }
+
+  .copy-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 6px 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-family: 'Syne', sans-serif;
+  }
+
+  .modal-close {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+  }
+  .empty-state .e-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 0.9rem; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--accent);
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 10px 22px;
+    border-radius: 999px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Berbagi<span>File</span></div>
+  <div class="badge">Lokal · Tanpa Server</div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Upload. Tulis. <em>Bagikan.</em></h1>
+    <p>Simpan file Anda beserta keterangan, lalu bagikan ke siapa saja dengan mudah.</p>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="upload-card">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" multiple>
+      <div class="drop-icon">📁</div>
+      <h3>Klik atau seret file ke sini</h3>
+      <p>Semua jenis file didukung</p>
+    </div>
+
+    <div class="file-preview" id="filePreview">
+      <div class="file-icon-big" id="previewIcon">📄</div>
+      <div class="file-info">
+        <div class="fname" id="previewName">—</div>
+        <div class="fsize" id="previewSize">—</div>
+      </div>
+      <button class="remove-btn" onclick="removeFile()" title="Hapus">✕</button>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="fileTitle">Judul File</label>
+      <input type="text" id="fileTitle" placeholder="Contoh: Laporan Keuangan Q1 2025">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="fileDesc">Keterangan</label>
+      <textarea id="fileDesc" placeholder="Tulis deskripsi singkat tentang file ini..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label class="field-label" for="fileAuthor">Nama Pengunggah</label>
+        <input type="text" id="fileAuthor" placeholder="Nama Anda">
+      </div>
+      <div class="field">
+        <label class="field-label" for="fileCategory">Kategori</label>
+        <input type="text" id="fileCategory" placeholder="Contoh: Dokumen, Foto...">
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="uploadFile()">⬆ Tambahkan File</button>
+  </div>
+
+  <!-- File List -->
+  <div>
+    <div class="section-title">
+      File Tersimpan
+      <span class="count-badge" id="countBadge">0 file</span>
+    </div>
+    <div class="file-list" id="fileList">
+      <div class="empty-state">
+        <div class="e-icon">📭</div>
+        <p>Belum ada file. Upload file pertama Anda!</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal">
+    <h3>📤 Bagikan File</h3>
+    <p>Salin tautan di bawah ini dan kirim ke siapa saja untuk mengunduh file.</p>
+    <div class="link-box">
+      <span id="shareLink">—</span>
+      <button class="copy-btn" onclick="copyLink()">Salin</button>
+    </div>
+    <button class="modal-close" onclick="closeModal()">Tutup</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let selectedFile = null;
+  let files = JSON.parse(localStorage.getItem('berbagifiles') || '[]');
+
+  const fileIcons = {
+    pdf: '📕', doc: '📘', docx: '📘', xls: '📗', xlsx: '📗',
+    ppt: '📙', pptx: '📙', jpg: '🖼', jpeg: '🖼', png: '🖼',
+    gif: '🖼', mp4: '🎬', mp3: '🎵', zip: '🗜', rar: '🗜',
+    txt: '📄', csv: '📊', json: '🔧', default: '📄'
+  };
+
+  function getIcon(name) {
+    const ext = name.split('.').pop().toLowerCase();
+    return fileIcons[ext] || fileIcons.default;
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function formatDate(ts) {
+    return new Date(ts).toLocaleDateString('id-ID', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    });
+  }
+
+  // Drag and drop
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  document.getElementById('fileInput').addEventListener('change', e => {
+    if (e.target.files[0]) setFile(e.target.files[0]);
+  });
+
+  function setFile(f) {
+    selectedFile = f;
+    document.getElementById('filePreview').classList.add('visible');
+    document.getElementById('previewIcon').textContent = getIcon(f.name);
+    document.getElementById('previewName').textContent = f.name;
+    document.getElementById('previewSize').textContent = formatSize(f.size);
+    if (!document.getElementById('fileTitle').value) {
+      document.getElementById('fileTitle').value = f.name.replace(/\.[^.]+$/, '');
+    }
+  }
+
+  function removeFile() {
+    selectedFile = null;
+    document.getElementById('filePreview').classList.remove('visible');
+    document.getElementById('fileInput').value = '';
+    document.getElementById('fileTitle').value = '';
+  }
+
+  function uploadFile() {
+    if (!selectedFile) { showToast('⚠ Pilih file terlebih dahulu'); return; }
+    const title = document.getElementById('fileTitle').value.trim() || selectedFile.name;
+    const desc = document.getElementById('fileDesc').value.trim();
+    const author = document.getElementById('fileAuthor').value.trim() || 'Anonim';
+    const category = document.getElementById('fileCategory').value.trim() || 'Umum';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const entry = {
+        id: Date.now().toString(36),
+        name: selectedFile.name,
+        title,
+        desc,
+        author,
+        category,
+        size: selectedFile.size,
+        type: selectedFile.type,
+        date: Date.now(),
+        data: e.target.result
+      };
+      files.unshift(entry);
+      save();
+      render();
+      // Reset
+      removeFile();
+      document.getElementById('fileDesc').value = '';
+      document.getElementById('fileAuthor').value = '';
+      document.getElementById('fileCategory').value = '';
+      showToast('✅ File berhasil ditambahkan!');
+    };
+    reader.readAsDataURL(selectedFile);
+  }
+
+  function save() {
+    try { localStorage.setItem('berbagifiles', JSON.stringify(files)); } catch(e) {}
+  }
+
+  function render() {
+    const list = document.getElementById('fileList');
+    const badge = document.getElementById('countBadge');
+    badge.textContent = files.length + ' file';
+
+    if (!files.length) {
+      list.innerHTML = `<div class="empty-state"><div class="e-icon">📭</div><p>Belum ada file. Upload file pertama Anda!</p></div>`;
+      return;
+    }
+
+    list.innerHTML = files.map(f => `
+      <div class="file-card" id="card-${f.id}">
+        <div class="fc-icon">${getIcon(f.name)}</div>
+        <div class="fc-body">
+          <div class="fc-name">${esc(f.title)}</div>
+          ${f.desc ? `<div class="fc-desc">${esc(f.desc)}</div>` : ''}
+          <div class="fc-meta">
+            <span>👤 ${esc(f.author)}</span>
+            <span>🏷 ${esc(f.category)}</span>
+            <span>💾 ${formatSize(f.size)}</span>
+            <span>📅 ${formatDate(f.date)}</span>
+          </div>
+        </div>
+        <div class="fc-actions">
+          <a class="dl-btn" href="${f.data}" download="${esc(f.name)}">⬇ Unduh</a>
+          <button class="share-btn" onclick="openShare('${f.id}')">🔗 Bagikan</button>
+          <button class="del-btn" onclick="deleteFile('${f.id}')">🗑 Hapus</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function deleteFile(id) {
+    if (!confirm('Hapus file ini?')) return;
+    files = files.filter(f => f.id !== id);
+    save();
+    render();
+    showToast('🗑 File dihapus');
+  }
+
+  function openShare(id) {
+    const f = files.find(x => x.id === id);
+    if (!f) return;
+    // Generate a fake shareable link (in real app this would be a server URL)
+    const fakeLink = `${location.origin}${location.pathname}#file-${f.id}`;
+    document.getElementById('shareLink').textContent = fakeLink;
+    document.getElementById('shareLink').dataset.url = fakeLink;
+    document.getElementById('shareLink').dataset.file = f.data;
+    document.getElementById('shareLink').dataset.name = f.name;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById('modalOverlay') || !e.target.closest('.modal')) {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+  }
+
+  function copyLink() {
+    const link = document.getElementById('shareLink').textContent;
+    navigator.clipboard.writeText(link).then(() => {
+      showToast('✅ Tautan berhasil disalin!');
+      closeModal();
+    }).catch(() => {
+      showToast('⚠ Tidak bisa menyalin — coba manual');
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // Init
+  render();
+</script>
+</body>
+</html>
